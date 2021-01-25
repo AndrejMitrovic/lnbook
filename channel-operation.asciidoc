@@ -116,7 +116,7 @@ He will just not have received the funds from Alice.
 This is important!
 Despite the fact that Bob has a new commitment transaction with two valid signatures and an HTLC output inside he cannot consider his HTLC as being set up successfully.
 He first needs to have Alice invalidate her old state.
-That is why - in the case that he is not the final recipient of the funds - he should not forward the HTLC yet by setting up a new HTLC on the next channel with Wei.
+That is why - in the case that he is not the final recipient of the funds - he should not forward the HTLC yet by setting up a new HTLC on the next channel with Charlie.
 Alice will not invalidate her commitment transaction yet as she has to first get her new commitment transaction and she wants Bob to invalidate his old commitment transaction which he can safely do at this time.
 
 [[routing-setup-htlc-3]]

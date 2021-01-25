@@ -56,9 +56,9 @@ The balances of channels change with every payment. Consequently, any topologica
 The standard path finding mechanism in source-based onion-routing that is implemented in all Lightning Network implementations is the following:
 
 . Given the limited local topological knowledge the sender tries to find one or more routing paths.
-. Select an arbitrary path of payment channels which satisfies 3 conditions: 
-  * path connects sender and receiver of the payment, 
-  * all channels on path have a presumed capacity of at least the payment amount, 
+. Select an arbitrary path of payment channels which satisfies 3 conditions:
+  * path connects sender and receiver of the payment,
+  * all channels on path have a presumed capacity of at least the payment amount,
   * all channels on path accept HTLCs of the payment amount.
 . Construct the "onion" from destination to sender according to the meta data of the channels (base fee, fee rate, CLTV delta).
 . Send out the "onion" and expect one of two possible results returned:
@@ -70,28 +70,28 @@ The standard path finding mechanism in source-based onion-routing that is implem
 This means that with every attempted payment nodes actually probe the network and also learn some information about how balances are distributed.
 Implementations will usually prioritise cheaper paths or exclude channels which have recently failed.
 In that sense the selection is not completely arbitrary.
-Even with such primitive heuristics in place it could still be considered a random process or a random walk through the channel graph. 
+Even with such primitive heuristics in place it could still be considered a random process or a random walk through the channel graph.
 There can be several reasons why a payment may fail along the way.
 Reasons for failure include: a routing node became unreachable, a routing channel no longer has the required balance, a routing node doesn't accept new HTLCs, the owner of a channel increased the channel fees, or the channel was closed in the interim.
 Furthermore, there is no guarantee that the route chosen was the cheapest in terms of fees or the shortest in terms of channels involved.
 At the time of writing this book, this is a design trade-off made to protect user privacy.
 
 === Paths are constructed from destination to source
-Let us use our standard example in which Alice wants to send a payment of 100k satoshi on a path via Bob and Wei to Gloria.
-The _path_ obviously looks like (Alice)-->(Bob)-->(Wei)-->Gloria.
-Bob and Wei will charge routing fees to forward the _onion_.
+Let us use our standard example in which Alice wants to send a payment of 100k satoshi on a path via Bob and Charlie to Gloria.
+The _path_ obviously looks like (Alice)-->(Bob)-->(Charlie)-->Gloria.
+Bob and Charlie will charge routing fees to forward the _onion_.
 As you already know, nodes can charge two types of fees.
 First, the _base fee_ will be charged for any successful forwarding and settlement of an HTLC.
 This fee is constant and independent of the amount that the node is forwarding.
 Secondly, nodes might charge a _fee rate_ which is proportional to the forwarded amount.
-For simplicity assume that the fee rate of Bob and Wei is expensive with 1% for Bob and 2% for Wei.
-For simplicity furthermore assume neither Bob nor Wei take a base fee.
+For simplicity assume that the fee rate of Bob and Charlie is expensive with 1% for Bob and 2% for Charlie.
+For simplicity furthermore assume neither Bob nor Charlie take a base fee.
 When Alice constructs the onion she has to include the routing fees as the difference of the incoming HTLC and the outgoing HTLC.
 Let us assume she computes the routing fees for the onion incorrectly.
 Alice knows that 1% of 100k satoshi is 1k satoshi which she belives she should include in Bob's onion.
-Similarly she knows that 2% of 100k satoshi is 2k satoshi which she belives she should include in Wei's onion.
+Similarly she knows that 2% of 100k satoshi is 2k satoshi which she belives she should include in Charlie's onion.
 An inexperienced Alice would incorrectly believe her total fee to be 3k satoshi. But she is wrong.
-Look at the incorrect onion from our naive Alice. Bob would reject this onion. 
+Look at the incorrect onion from our naive Alice. Bob would reject this onion.
 
 ----
 "route": [
@@ -104,7 +104,7 @@ Look at the incorrect onion from our naive Alice. Bob would reject this onion.
          "dealy": 187,
       },
       {
-         "id": "Wei", 
+         "id": "Charlie",
          "channel": "74",
          "direction": 1,
          "satoshi": 102000,
@@ -125,21 +125,21 @@ Look at the incorrect onion from our naive Alice. Bob would reject this onion.
 The reason for Bob to not forward the onion is that he expects the incoming amount to be 1% larger then the amount he is supposed to forward.
 Thus he would like to receive an incoming ammount of `103020` satoshi (102000 + 1%) which is 20 satoshi more than our uninformed Alice actually sent him.
 According to Bob's fee schedule Bob will reject this onion.
-If Alice constructed the onion from the destinatin towards the source, she would have started with 100k satoshi for Gloria. 
-In the next step she would have added Wei's 2% fee to compute 102k for Wei's input. 
-In the last step she would have applied Bob's fee (1%) to 102k to derive 102k + 1020 satoshi. 
+If Alice constructed the onion from the destinatin towards the source, she would have started with 100k satoshi for Gloria.
+In the next step she would have added Charlie's 2% fee to compute 102k for Charlie's input.
+In the last step she would have applied Bob's fee (1%) to 102k to derive 102k + 1020 satoshi.
 That makes a total of 103,020 satoshi that she needs to send to Bob.
 As the routing fees can increase the amount that is being forwarded even beyond the capacity of small channels, it makes sense to start the construction of the onion and the path finding at the destination and work from the destination back towards the sender.
 
 [NOTE]
 ====
-Onions are constructed from the inside to the outside. Hence, onions are built starting with the destination. 
-However, this is not the reason why path finding has to start with the destination node. 
+Onions are constructed from the inside to the outside. Hence, onions are built starting with the destination.
+However, this is not the reason why path finding has to start with the destination node.
 ====
 
 === Fundamentals about path finding
 Finding a path through a graph is a problem modern computers can solve rather efficiently.
-Developers mainly choose breadth-first search if the edges are all of equal weight. 
+Developers mainly choose breadth-first search if the edges are all of equal weight.
 In cases where the edges are not of equal weight the Dijkstra Algorithm is used.
 In our case the weights of the edges could represent the routing fees.
 Only edges with a capacity larger than the amount to be sent will be included in the search.
@@ -223,12 +223,12 @@ We learn from the diagram that payments can take several seconds while the node 
 This is due to the fact that a single onion can easily take a few seconds to return and a sender might have to send several onions sequentially while probing for a successful path.
 In comparison, this will still be much faster than waiting for confirmations on a Bitcoin block; but it is not performant enough in an environment where payments need to settle fast.
 People standing in a line at the grocery store cash register prefer not to wait several seconds.
-Thus, Lightning developers have come up and implemented the following improvements to the probing algorithms. 
+Thus, Lightning developers have come up and implemented the following improvements to the probing algorithms.
 We are also hopeful that additional improvements and optimizations can be discovered in the future.
 
 ==== Improvements to probing
 Nodes ordinarily probe the network when making a payment. But nothing prevents them from probing the network periodically.
-Instead of making a real payment, nodes could send out one or multiple _fake_ payments. 
+Instead of making a real payment, nodes could send out one or multiple _fake_ payments.
 A fake payment is nothing but an onions with a random payment hash.
 Given the properties of the hash function, it is save to assume that nobody knows the preimage.
 If the payment amount is small enough, a fake payment will fail at the destination and this allows the sending node to learn about the balances on the path.
@@ -237,12 +237,12 @@ It produces spam and heavy network load and therefore this behaviour is discoura
 However, participants cannot easily be stopped from doing this.
 Channel partners can detect this type of abuse by observing frequent payments that always fail.
 As punishment channel partners can decide to produce errors right away without providing balance information
-or they can decide to close the abused channel. 
+or they can decide to close the abused channel.
 
 [Note]
 ====
 We want you to understand that Lightning Network by design does not have perfect privacy.
-While a lot of information is not easily accessible, every time a path is probed the node learns something about the state of the network at that point in time. 
+While a lot of information is not easily accessible, every time a path is probed the node learns something about the state of the network at that point in time.
 ====
 
 Please note that one should never send two onions at the same time with the same payment hash for which the recipient knows the preimage.
@@ -288,10 +288,10 @@ One can conclude that a smaller amount has a higher likelihood to be routed succ
 ----
 
 This supposition ignores some edge cases which we ignore for this discussion. The above observation might not hold true
-for small amounts of Satoshis. Certain node operators might not be interested in routing small amounts because they might 
+for small amounts of Satoshis. Certain node operators might not be interested in routing small amounts because they might
 consider them as "not profitable enough". Node operators might weigh other node resources against the tiny profit of a
-small payment and simply reject payments below a given threshold or minimum. What is "small" and what to reject will 
-be defined by each operator on its personal preferences. 
+small payment and simply reject payments below a given threshold or minimum. What is "small" and what to reject will
+be defined by each operator on its personal preferences.
 
 But for the general case, researchers and developers have already tested this postulate and confirmed it multiple times emperically.
 
@@ -310,8 +310,8 @@ The recipient will only release the preimage if the sum of all incoming HTLCs is
 ====
 **Multipath or multipart payments?** You might have noticed that we named the chapter "multipath" payments but mentioned in the last paragraph that such a payment consists of several parts.
 The protocol specification uses the abbrivation _MPP_ for _multipart payments_.
-Multipath is just a special case of multipart. 
-Multipart covers all the cases of multipath plus the unusual case where multiple parts use the same path. 
+Multipath is just a special case of multipart.
+Multipart covers all the cases of multipath plus the unusual case where multiple parts use the same path.
 For simplicity we take the liberty to also abbriviate multipath payments with MPP.
 ====
 
@@ -378,15 +378,15 @@ It is quite clear that after already one single payment such a 50 - 50 state wou
 You can see this in the following graph.
 
 [[rebalancing-2]]
-.The Bob - Wei channel becomes now imbalanced
+.The Bob - Charlie channel becomes now imbalanced
 image:images/rebalancing-2.png[]
 
-you can see that after Bob made a payment of 1 million satoshi to Wei the channel balance was shifted.
-Bob now has 1.5 million satoshi on the channel and wei has 3.5 million satoshi on the channel.
+you can see that after Bob made a payment of 1 million satoshi to Charlie the channel balance was shifted.
+Bob now has 1.5 million satoshi on the channel and Charlie has 3.5 million satoshi on the channel.
 The balance ratio went from 50/50 to 30/70.
 The other 2 channels however styed with 50/50.
 
-Wei decides that he wants to have a 50/50 channel with Bob.
+Charlie decides that he wants to have a 50/50 channel with Bob.
 There are 3 ways of how he can achieve this.
 
 . He can send back 1 milion satoshi to Bob
@@ -396,21 +396,21 @@ There are 3 ways of how he can achieve this.
 Sending back the money would be quite expensive and does not seem to be a realistic option.
 Using an onchain swapping service after every payment to rebalance channels seems also problematic.
 The entire idea of creating the Lightning Network was to have less on chain transaction and be able to send money between people without the necessity to do on chain transactions.
-Thus there is only the last option which means that Wei could move the money from the Bob-Wei channel via the Bob-Erica channel to hhis Erica-Wei channel. 
+Thus there is only the last option which means that Charlie could move the money from the Bob-Charlie channel via the Bob-Erica channel to hhis Erica-Charlie channel.
 
 [[rebalancing-4]]
-.Wei tries to rebalance the Bob-Wei channel in the unbalanced network via a circular onion of 1 mio Satoshi.
+.Charlie tries to rebalance the Bob-Charlie channel in the unbalanced network via a circular onion of 1 mio Satoshi.
 image:images/rebalancing-4.png[]
 
 The problem in the new network can easily be seen on the next picture.
-While the Bob-Wei channel now becomes 50/50 again all the other channel turned into a 30/70 split ratio. 
+While the Bob-Charlie channel now becomes 50/50 again all the other channel turned into a 30/70 split ratio.
 
 [[rebalancing-5]]
 .Rebalancing one channel produces imbalanced other channels
 image:images/rebalancing-5.png[]
 
 An interesting oversvation about this rebalancing can be made though!
-After the payment and the rebalancing it looked like Bob initially had sent Money not via the Bob-Wei channel but via the path along Erica. 
+After the payment and the rebalancing it looked like Bob initially had sent Money not via the Bob-Charlie channel but via the path along Erica.
 
 [[rebalancing-6]]
 .Rebalancing is equivalent to having selected a different payment path to begin with.
@@ -423,7 +423,7 @@ However this is not true!
 When rebalancing comes into place we can use the local knowledge of the distribution of balances that nodes might have to help with selection of paths and finding a total payment path / multi path or flow.
 We will explore this idea a little bit more in the upcoming section about JIT routing.
 
-Remember in our example after Bob has paid Wei Bob had a total amount of 4 million satoshi, Wei had a total of 6 million satoshi and Erica still had 5 million satoshi as before.
+Remember in our example after Bob has paid Charlie Bob had a total amount of 4 million satoshi, Charlie had a total of 6 million satoshi and Erica still had 5 million satoshi as before.
 Of course it would be possible to have payment channels between these three people with that distribution of funds so that everyone has 50% of the capacity on their side of the payment channel.
 
 [[rebalancing-7]]
@@ -484,9 +484,9 @@ The just in time Routing scheme has 2 major advantages over source based routing
 . It increases the privacy of channels. If nodes that do not have sufficient liquidity return the onions an attacker can use that behavior to probe for the channel balance. However if nodes rebalance their channels they will always be able to forward the payment and protect themselves from probing attacks.
 . More importantly it resembles multipart payments in which the splitting of the payment is not been decided by the sender who would not know how balances remotely are distributed but the splitting would be achieved by the routing node that knows its local topology.
 
-Let us elaborate on the second point and take the example in which Bob was supposed to forward the onion from Alice to Wei but does have enough liquidity on the channel with Wei.
+Let us elaborate on the second point and take the example in which Bob was supposed to forward the onion from Alice to Charlie but does have enough liquidity on the channel with Charlie.
 If Bob now does a cebalancing operation through Erica and is able to afterwards forward the payment along to Bob he has effectively split the payment at his node to flow along two paths.
-One part flows directly to Wei and the other part takes the path over Erica to Wei.
+One part flows directly to Charlie and the other part takes the path over Erica to Charlie.
 It is obvious that splitting a payment at the node that can't forward the entire payment is much more reliable and effective than letting the sender decide how to split a payment and into which amounts.
 
 We thus can see that with the help of JIT-Routing rebalancing and multipart payments are actually not so different concepts and ideas.

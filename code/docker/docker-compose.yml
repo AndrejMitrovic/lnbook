@@ -38,8 +38,8 @@ services:
       - "9735"
     restart: always
 
-  Wei:
-    container_name: Wei
+  Charlie:
+    container_name: Charlie
     build:
         context: eclair
     image: lnbook/eclair:latest
