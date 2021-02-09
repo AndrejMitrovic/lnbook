@@ -475,7 +475,7 @@ In the next diagram we can see how the per hop payload for Dina looks like.
 .`per_hop` payload of Dinas onion and the encrypted
 image:images/routing-onion-2.png[]
 
-On important feature to protect the privacy is to make sure that onions are always of equal length in depend of their position along the payment path.
+On important feature to protect the privacy is to make sure that onions are always of equal length independent of their position along the payment path.
 Thus onions are always expected to contain 20 entries of 65 Bytes with per hop data.
 If this wasn't the case, and the onion packet shrank as it was being processed, then this would leak information about the true path length to nodes in the route as the packet would be smaller the further down the route we went.
 Since Dina is the final recipient of the payment, we only have 65 bytes worth of data to fill with actual content.
@@ -484,7 +484,7 @@ The remaining bytes are filled with random bytes to pad out the packet in an unp
 Taking a step back, before Alice is able to prepare the remainder of the packet, we needs to generate an ephemeral key (a key only used once).
 This ephemeral key is then used to generate a series of additional keys, which are themselves used for encryption, authentication, and also as input to a CSPRNG to deterministically generate the set of random filler bytes.
 In the spirit of onion encryption, Alice will begin encrypting the payload from the last hop, adding a new layer of encryption with each new hop.
-During processing, each node will authenticate the contents of the payload, then process the packet (decryption it and shifting around some bytes) to prepare it for processing by the next node in the route.
+During processing, each node will authenticate the contents of the payload, then process the packet (decrypting it and shifting around some bytes) to prepare it for processing by the next node in the route.
 As we want each node to use a new shared secret to authenticate and encrypt its portion of the packet, the Sphinx onion packet format uses a _re-randomization_ scheme to allow Alice to generate a single ephemeral Diffie-Hellman key for the entire route.
 Rather than occupying space in the routing payload for N public keys, with this little trick, we're able to only include a single public key, which is used for ECDH at each step, and randomized in a deterministic manner for the next hop.
 
@@ -535,7 +535,7 @@ We've omitted the details here for brevity, but notice how only a single ephemer
 During processing each node will re-randomize the ephemeral key for the following node.
 Luckily the ephemeral keys that Alice used for the ECDH with Dina can be derived from the ephemeral key that she used for Chan.
 Thus after Chan decrypts his layer he can use the shared secret and his ephemeral public key to derive the ephemeral public key that Dina is supposed to use and store it in the header of the Onion that he forwards to Dina.
-The exact progress to generate the ephemeral keys for every hope will be explained at the very end of the chapter.
+The exact process to generate the ephemeral keys for every hop will be explained at the very end of the chapter.
 Similarly it is important to recognize that Alice removed data from the end of Davids onion payload to create space for the per hop data in Chan's onion.
 Thus when Chan has received his onion and removed his routing hints and per hop data the onion would be to short and he somehow needs to be able to append the 65 Bytes of filled junk data in a way that the HMACs will still be valid.
 This process is of filler generation as well as the process of deriving the ephemeral keys is described in the end of this chapter.
